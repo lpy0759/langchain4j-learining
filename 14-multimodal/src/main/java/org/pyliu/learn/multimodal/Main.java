@@ -15,12 +15,12 @@ public class Main {
 
     public static void main(String[] args) {
         // 一张公开图片（维基共享资源上的猫），可换成任意图片 URL
-        String imageUrl = "https://upload.wikimedia.org/wikipedia/commons/3/3a/Cat03.jpg";
+        String imageUrl = "https://pic2.zhimg.com/80/v2-4b1f74b90800d25440314bb897e1e05b_720w.webp";
 
         ChatModel model = OpenAiChatModel.builder()
                 .baseUrl("https://dashscope.aliyuncs.com/compatible-mode/v1")
                 .apiKey(requireKey())
-                .modelName("qwen-vl-max")   // 视觉理解模型
+                .modelName("qwen3.8-max")   // 视觉理解模型
                 .build();
 
         // 一条消息里同时带"文字问题 + 图片"
