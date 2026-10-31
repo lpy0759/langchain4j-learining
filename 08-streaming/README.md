@@ -47,3 +47,4 @@ mvn -pl 08-streaming exec:java -Dexec.mainClass=org.pyliu.learn.streaming.Main
 1. `TokenStream.onPartialResponse` 收到的是**增量片段**，不是累计全文；要拼接需自己 `StringBuilder` 累加。
 2. Web 场景下，流式通常配合 **SSE（Server-Sent Events）** 推给前端，Spring Boot 模块（12）可以这么扩展。
 3. 流式还能结合工具调用（`onPartialToolCall`）、RAG（`onRetrieved`）等，观察中间过程。
+4. **流式是异步的**：`chat()` / `start()` 立刻返回，token 在后台线程回调。命令行演示里必须用 `CountDownLatch` 阻塞 `main` 线程（或 `Thread.sleep`），否则程序会在回复到达前退出、什么都看不到。Web 场景没有这个问题，因为 Servlet/框架的事件循环本身常驻。

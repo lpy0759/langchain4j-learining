@@ -7,6 +7,9 @@ import dev.langchain4j.model.openai.OpenAiStreamingChatModel;
 import dev.langchain4j.service.AiServices;
 import dev.langchain4j.service.TokenStream;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
 /**
  * 模块 08：流式输出（Streaming）。
  *
@@ -21,7 +24,7 @@ public class Main {
         TokenStream stream(String message);
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         // 1) 底层流式模型：手动实现回调
         rawStreaming();
 
@@ -29,9 +32,13 @@ public class Main {
         aiServiceStreaming();
     }
 
-    private static void rawStreaming() {
+    private static void rawStreaming() throws Exception {
         StreamingChatModel model = newStreamingModel();
         System.out.println("=== 底层流式（onPartialResponse 逐字回调）===");
+
+        // 流式是异步的：chat() 立刻返回，token 在后台线程逐个回调。
+        // 若不阻塞 main 线程，程序会在回复到达前就退出，什么也看不到。
+        CountDownLatch latch = new CountDownLatch(1);
         model.chat("讲一个 100 字左右的小故事", new StreamingChatResponseHandler() {
             @Override
             public void onPartialResponse(String partial) {
@@ -41,27 +48,38 @@ public class Main {
             @Override
             public void onCompleteResponse(ChatResponse response) {
                 System.out.println("\n[流式结束，共收到一次完整响应]");
+                latch.countDown();
             }
 
             @Override
             public void onError(Throwable error) {
                 error.printStackTrace();
+                latch.countDown();
             }
         });
+        latch.await(60, TimeUnit.SECONDS);   // 最多等 60 秒
     }
 
-    private static void aiServiceStreaming() {
+    private static void aiServiceStreaming() throws Exception {
         StreamingChatModel model = newStreamingModel();
         System.out.println("=== AiServices 声明式流式（TokenStream）===");
         Streamer streamer = AiServices.builder(Streamer.class)
                 .streamingChatModel(model)
                 .build();
 
+        CountDownLatch latch = new CountDownLatch(1);
         streamer.stream("用一句话介绍什么是 Java 虚拟机")
                 .onPartialResponse(t -> System.out.print(t))       // 逐字输出
-                .onCompleteResponse(r -> System.out.println("\n[完成]"))
-                .onError(Throwable::printStackTrace)
+                .onCompleteResponse(r -> {
+                    System.out.println("\n[完成]");
+                    latch.countDown();
+                })
+                .onError(e -> {
+                    e.printStackTrace();
+                    latch.countDown();
+                })
                 .start();                                          // 必须调用 start 才会触发
+        latch.await(60, TimeUnit.SECONDS);   // 最多等 60 秒
     }
 
     private static StreamingChatModel newStreamingModel() {
