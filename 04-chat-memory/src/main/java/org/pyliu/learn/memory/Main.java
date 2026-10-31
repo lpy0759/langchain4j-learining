@@ -6,9 +6,11 @@ import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.memory.chat.TokenWindowChatMemory;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.openai.OpenAiChatModel;
+import dev.langchain4j.model.openai.OpenAiChatModelName;
 import dev.langchain4j.model.openai.OpenAiTokenCountEstimator;
 import dev.langchain4j.service.AiServices;
 import dev.langchain4j.service.MemoryId;
+import dev.langchain4j.service.UserMessage;
 
 /**
  * 模块 04：对话记忆（Chat Memory）。
@@ -24,7 +26,7 @@ public class Main {
 
     // 多用户时：用 @MemoryId 标注"以谁的身份记忆"，AiServices 会按该 id 各自维护一份记忆
     interface MultiUserAssistant {
-        String chat(@MemoryId String userId, String message);
+        String chat(@MemoryId String userId, @UserMessage String message);
     }
 
     public static void main(String[] args) {
@@ -40,8 +42,10 @@ public class Main {
         System.out.println("[消息窗口记忆] " + withMemory.chat("我叫什么名字？做什么工作？"));
 
         // 2) 按 token 数记忆：控制上下文长度、控制成本
+        // 本地 qwen3.5 没有公开 tokenizer，jtokkit 只认 OpenAI 模型名；
+        // 借用 GPT-4o 的 O200K 编码做近似计数（仅用于裁剪窗口，不影响实际调用）
         ChatMemory tokenMemory = TokenWindowChatMemory.builder()
-                .maxTokens(500, new OpenAiTokenCountEstimator("deepseek-chat"))
+                .maxTokens(500, new OpenAiTokenCountEstimator(OpenAiChatModelName.GPT_4_O))
                 .build();
         Assistant tokenAssistant = AiServices.builder(Assistant.class)
                 .chatModel(model)
@@ -68,14 +72,11 @@ public class Main {
     }
 
     private static ChatModel newModel() {
-        String apiKey = System.getenv("DEEPSEEK_API_KEY");
-        if (apiKey == null || apiKey.isBlank()) {
-            throw new IllegalStateException("请先设置环境变量 DEEPSEEK_API_KEY");
-        }
+        // 本地 Ollama 走 OpenAI 兼容接口（默认 http://localhost:11434/v1），无需真实 API key
         return OpenAiChatModel.builder()
-                .baseUrl("https://api.deepseek.com")
-                .apiKey(apiKey)
-                .modelName("deepseek-chat")
+                .baseUrl("http://localhost:11434/v1")
+                .apiKey("ollama")
+                .modelName("qwen2.5-coder:7b")
                 .build();
     }
 }

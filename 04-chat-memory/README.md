@@ -33,7 +33,7 @@ Assistant a = AiServices.builder(Assistant.class)
 
 // token 窗口
 ChatMemory m2 = TokenWindowChatMemory.builder()
-        .maxTokens(500, new OpenAiTokenCountEstimator("deepseek-chat")).build();
+        .maxTokens(500, new OpenAiTokenCountEstimator(OpenAiChatModelName.GPT_4_O)).build();
 
 // 多用户隔离
 interface Multi { String chat(@MemoryId String userId, String msg); }
@@ -43,7 +43,7 @@ ChatMemoryProvider provider = id -> MessageWindowChatMemory.withMaxMessages(10);
 ## 运行方式
 
 ```bash
-export DEEPSEEK_API_KEY=sk-xxx
+# 先确保本地 Ollama 已启动并拉取 qwen3.5:9b：ollama pull qwen3.5:9b
 mvn -pl 04-chat-memory exec:java -Dexec.mainClass=org.pyliu.learn.memory.Main
 ```
 
@@ -51,4 +51,4 @@ mvn -pl 04-chat-memory exec:java -Dexec.mainClass=org.pyliu.learn.memory.Main
 
 1. 示例里的记忆是**内存实现**，进程重启就丢。生产环境可换成持久化实现（Redis / 数据库），LangChain4j 提供 `ChatMemoryStore` 扩展点。
 2. 消息里往往需要保留 system 消息在最前面（`alwaysKeepSystemMessageFirst`），保证人设不丢。
-3. token 窗口需要一个"计 token"的估算器，不同模型用不同的 `TokenCountEstimator` 实现。
+3. token 窗口需要一个"计 token"的估算器，不同模型用不同的 `TokenCountEstimator` 实现。本地 qwen3.5 没有公开 tokenizer，jtokkit 只认 OpenAI 模型名，所以这里借用 GPT-4o 的 O200K 编码做近似计数。
