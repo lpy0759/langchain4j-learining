@@ -21,7 +21,7 @@ public class Main {
 
     public static void main(String[] args) {
         // 1. 从环境变量读取 API Key（不写死在代码里）
-        String apiKey = System.getenv("DEEPSEEK_API_KEY");
+        String apiKey = System.getenv("DASHSCOPE_API_KEY");
         if (apiKey == null || apiKey.isBlank()) {
             System.err.println("请先设置环境变量：export DEEPSEEK_API_KEY=sk-xxx");
             System.exit(1);
@@ -29,9 +29,9 @@ public class Main {
 
         // 2. 构建一个 ChatModel：把 OpenAI 兼容客户端指向 DeepSeek
         ChatModel model = OpenAiChatModel.builder()
-                .baseUrl("https://api.deepseek.com")   // DeepSeek 的 OpenAI 兼容地址
+                .baseUrl("https://maas.qianwenaiapi.com/compatible-mode/v1")   // DeepSeek 的 OpenAI 兼容地址
                 .apiKey(apiKey)
-                .modelName("deepseek-chat")            // 对话模型
+                .modelName("qwen3.8-max")            // 对话模型
                 // 打开请求/响应日志，方便观察底层发生了什么（默认走 slf4j，DEBUG 级别）
                 .logRequests(true)
                 .logResponses(true)
